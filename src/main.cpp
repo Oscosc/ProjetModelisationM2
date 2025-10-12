@@ -10,7 +10,10 @@ int main(int argc, char *argv[])
   Eigen::MatrixXi F;
 
   // Mesh loaded
-  igl::readOBJ("../resources/bunny.obj", V, F);
+  if(argc < 2)
+    igl::readOBJ("../resources/bunny.obj", V, F);
+  else
+    igl::readOBJ("../resources/" + std::string(argv[1]), V, F);
 
   // Plot the mesh
   igl::opengl::glfw::Viewer viewer;
