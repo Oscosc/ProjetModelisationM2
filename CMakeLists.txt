@@ -24,9 +24,17 @@ igl_include(glfw)
 #igl_include(restricted mosek)
 #igl_include(restricted triangle)
 
-# Add your project files
-file(GLOB SRC_FILES *.cpp)
+# Source files
+file(GLOB SRC_FILES src/*.cpp)
+
+# Final executable
 add_executable(${PROJECT_NAME} ${SRC_FILES})
+
+# Header files
+target_include_directories(example
+  PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+)
 
 # Link igl (and the glfw module) to your project
 target_link_libraries(${PROJECT_NAME} PUBLIC 
