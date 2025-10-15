@@ -1,4 +1,5 @@
 #include <igl/readOBJ.h>
+#include <igl/readOFF.h>
 
 #include <ModelingApp.h>
 
@@ -9,7 +10,7 @@ int main(int argc, char *argv[])
   Eigen::MatrixXi F;
 
   // Load a mesh in OBJ format
-  igl::readOBJ("../resources/" + std::string(argv[1]), V, F);
+  igl::readOFF("../resources/" + std::string(argv[1]), V, F);
 
   // Create App
   ModelingApp app(V, F);

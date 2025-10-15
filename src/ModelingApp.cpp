@@ -5,7 +5,7 @@
 ModelingApp::ModelingApp(Eigen::MatrixXd& V, Eigen::MatrixXi& F) : m_V(V), m_F(F)
 {
     // Initialize white
-    m_C = Eigen::MatrixXd::Constant(F.rows(),3,1);
+    m_C = Eigen::MatrixXd::Constant(V.rows(),3,1);
 
     // Add callback for face selection
     addMouseCallback();
@@ -41,13 +41,18 @@ void ModelingApp::addMouseCallback()
       viewer.core().viewport,
       m_V, m_F, fid, bc))
     {
+      // Get closest vertex ID
+      int maxc;
+      bc.maxCoeff(&maxc);
+      int vid = m_F(fid, maxc);
+
       // Paint hit
-      if(m_C(fid, 1) == 1) {
-        m_C.row(fid) = Eigen::RowVector3d(1, 0, 0);
-        m_selectedIndexes.insert(fid);
+      if(m_C(vid, 1) == 1) {
+        m_C.row(vid) = Eigen::RowVector3d(1, 0, 0);
+        m_selectedIndexes.insert(vid);
       } else {
-        m_C.row(fid) = Eigen::RowVector3d(1, 1, 1);
-        m_selectedIndexes.erase(fid);
+        m_C.row(vid) = Eigen::RowVector3d(1, 1, 1);
+        m_selectedIndexes.erase(vid);
       }
       viewer.data().set_colors(m_C);
 
@@ -61,5 +66,5 @@ void ModelingApp::addMouseCallback()
     }
     return false;
   };
-  std::cout<< R"(  [clic]  Pick face on shape)" << std::endl;
+  std::cout<< R"(  [clic]  Pick vertex on shape)" << std::endl;
 }
