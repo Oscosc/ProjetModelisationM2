@@ -11,7 +11,13 @@
 #define SELECTION_COLOR Eigen::RowVector3d(1, 1, 0)
 #define BASE_COLOR      Eigen::RowVector3d(1, 1, 1)
 
-class ModelingApp : public igl::opengl::glfw::Viewer
+/**
+ * @brief Contain UI interface and mesh loader system.
+ * Only one mesh can be loaded at once.
+ * 
+ * @author Oscar G, 2025
+ */
+class ModelingApp
 {
 
 /****************************** METHODS ******************************/
@@ -40,26 +46,83 @@ public:
     igl::opengl::glfw::Viewer& viewer();
 
 private:
+
+    /**
+     * @brief Add mouse callbacks to this application, making it capable of
+     * retrieving a user selected vertice when clicking
+     * 
+     */
     void addMouseCallback();
+
+    /**
+     * @brief Add ImGui menu to this application viewer
+     * 
+     */
     void addMenu();
+
+    /**
+     * @brief Update color of a vertex based on 'vid' argument.
+     * When 'canDeactivate' is false, selecting an already selected vertex will have no effect
+     * on the selection. Otherwise, it will remove the vertex from the current selection
+     * 
+     * @param vid vertex id to add/remove to current selection
+     * @param canDeactivate true by default, enabling to remove item from selection.
+     */
     void updateVertexColor(const unsigned int vid, const bool canDeactivate = true);
 
+    /**
+     * @brief Compute a neighbors map based on a matrix of faces of a mesh.
+     * 
+     * @param F faces matrix
+     * @return neighbors map as a vector of sets of ints (key is the element index)
+     */
     std::vector<std::set<int>> getNeighborsMap(const Eigen::MatrixXi& F);
 
-    std::set<unsigned int> getTopologicalRing(const unsigned int ringLevel);
+    /**
+     * @brief Find the n-topological ring of a point
+     * 
+     * @param vid vertex id (source)
+     * @param ringLevel level of topological ring to find (1 is neighbors linked with an edge to
+     * the source vertex)
+     * @param fill if true, il will return n-topological ring and 1 -> n-1 rings, otherwise it
+     * will return only the selected ring
+     * @return set of vertices of the topological ring
+     */
+    std::set<unsigned int> getTopologicalRing(const unsigned int vid, const unsigned int ringLevel);
 
 /***************************** ATTRIBUTES ****************************/
 private:
+
+    /** viewer object, used to display current mesh */
     igl::opengl::glfw::Viewer m_viewer;
+
+    /** plugin object, used to link the menu to viewer */
     igl::opengl::glfw::imgui::ImGuiPlugin m_plugin;
+
+    /** menu object, used to display various tools to perform functions on the mesh */
     igl::opengl::glfw::imgui::ImGuiMenu m_menu;
 
-    Eigen::MatrixXd m_V, m_C;
+    /** matrix of mesh's vertices positions */
+    Eigen::MatrixXd m_V;
+
+    /** matrix of mesh's vertices colors */
+    Eigen::MatrixXd m_C;
+
+    /** matrix of mesh's faces, containing the 3 vertices that's form face triangle on each row */
     Eigen::MatrixXi m_F;
+
+    /** default mesh color. DEPRECATED */
     Eigen::RowVector4f m_meshColor = Eigen::RowVector4f(0.8f, 0.8f, 0.8f, 1.0f);
 
+    /** currently selected vertices indexes on the mesh */
     std::set<unsigned int> m_selectedIndexes;
+
+    /** precomputed mesh's neighbors map */
     std::vector<std::set<int>> m_neighborsMap;
+
+    /** INTERFACE : define if the next clicked point will set the source */
     bool m_nextIsSource = false;
+
+    /** vid of the source point in the selection area */
     unsigned int m_source;
 };
