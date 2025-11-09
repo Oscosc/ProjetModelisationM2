@@ -1,11 +1,12 @@
 #pragma once
 
+#include <set>
+#include <map>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
-
-#include <set>
-#include <map>
+#include <Eigen/Sparse>
+#include <MeshOperators.h>
 
 #define SOURCE_COLOR    Eigen::RowVector3d(1, 0, 0)
 #define SELECTION_COLOR Eigen::RowVector3d(1, 1, 0)
@@ -71,14 +72,6 @@ private:
     void updateVertexColor(const unsigned int vid, const bool canDeactivate = true);
 
     /**
-     * @brief Compute a neighbors map based on a matrix of faces of a mesh.
-     * 
-     * @param F faces matrix
-     * @return neighbors map as a vector of sets of ints (key is the element index)
-     */
-    std::vector<std::set<int>> getNeighborsMap(const Eigen::MatrixXi& F);
-
-    /**
      * @brief Find the n-topological ring of a point
      * 
      * @param vid vertex id (source)
@@ -89,6 +82,8 @@ private:
      * @return set of vertices of the topological ring
      */
     std::set<unsigned int> getTopologicalRing(const unsigned int vid, const unsigned int ringLevel);
+
+    void setColorBasedOnLaplacian();
 
 /***************************** ATTRIBUTES ****************************/
 private:
@@ -118,11 +113,13 @@ private:
     std::set<unsigned int> m_selectedIndexes;
 
     /** precomputed mesh's neighbors map */
-    std::vector<std::set<int>> m_neighborsMap;
+    MeshOperators::AdjacencyMatrix m_A;
 
     /** INTERFACE : define if the next clicked point will set the source */
     bool m_nextIsSource = false;
 
     /** vid of the source point in the selection area */
     unsigned int m_source;
+
+    Eigen::VectorXd m_laplacianState;
 };

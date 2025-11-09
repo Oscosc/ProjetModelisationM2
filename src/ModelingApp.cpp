@@ -14,7 +14,7 @@ ModelingApp::ModelingApp(Eigen::MatrixXd& V, Eigen::MatrixXi& F, const bool with
     if (withMenu) addMenu();
 
     // Compute neighbors
-    m_neighborsMap = this->getNeighborsMap(m_F);
+    m_A = MeshOperators::computeAdjacencyMatrix(m_F, m_V.rows());
 
     // Set mesh data
     m_viewer.data().set_mesh(m_V, m_F);
@@ -197,7 +197,7 @@ void ModelingApp::addMenu()
           std::set<unsigned int> oldIndexes = m_selectedIndexes;
 
           for(unsigned int index : oldIndexes) {
-            const std::set<int>& nghbs = m_neighborsMap.at(index);
+            const std::vector<int> nghbs = MeshOperators::getNeighbors(m_A, index);
             for (int n : nghbs) {
               updateVertexColor(n, false);
             }
@@ -219,6 +219,20 @@ void ModelingApp::addMenu()
         m_C = Eigen::MatrixXd::Constant(m_V.rows(),3,1);
         m_viewer.data().set_colors(m_C);
         std::cout << "Selected vertices are now empty" << std::endl;
+      }
+
+      if(ImGui::Button("Init Laplacian", ImVec2(-1, 0)))
+      {
+        Eigen::VectorXd initialState = Eigen::VectorXd::Zero(m_A.cols());
+        initialState[m_source] = 1.0;
+        m_laplacianState = initialState;
+        setColorBasedOnLaplacian();
+      }
+
+      if(ImGui::Button("Step Laplacian", ImVec2(-1, 0)))
+      {
+        m_laplacianState = MeshOperators::computeDiffuseLaplacianStep(m_laplacianState, m_A);
+        setColorBasedOnLaplacian();
       }
     }
 
@@ -256,17 +270,20 @@ void ModelingApp::updateVertexColor(const unsigned int vid, const bool canDeacti
   }
 }
 
-std::vector<std::set<int>> ModelingApp::getNeighborsMap(const Eigen::MatrixXi &F)
-{
-  std::vector<std::set<int>> neighborsMap(F.maxCoeff() + 1);
+void ModelingApp::setColorBasedOnLaplacian() {
+  Eigen::MatrixXd C(m_laplacianState.size(), 3);
 
-  for (int i = 0; i < F.rows(); ++i)
+  double minVal = m_laplacianState.minCoeff();
+  double maxVal = m_laplacianState.maxCoeff();
+
+  for (int i = 0; i < m_laplacianState.size(); ++i)
   {
-    int v0 = F(i,0), v1 = F(i,1), v2 = F(i,2);
-    neighborsMap[v0].insert({v1, v2});
-    neighborsMap[v1].insert({v0, v2});
-    neighborsMap[v2].insert({v0, v1});
+      double t = (m_laplacianState[i] - minVal) / (maxVal - minVal + 1e-9); // normalisation
+      // Bleu -> Rouge
+      C(i, 0) = t;          // R
+      C(i, 1) = 0.0;        // G
+      C(i, 2) = 1.0 - t;    // B
   }
 
-  return neighborsMap;
+  m_viewer.data().set_colors(C);
 }
