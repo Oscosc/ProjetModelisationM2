@@ -34,5 +34,15 @@ namespace MeshOperators
      */
     const std::vector<int> getNeighbors(const AdjacencyMatrix& A, const int vid);
 
+    /**
+     * @brief Compute a step of Laplacian diffusion function.
+     * 
+     * For each point of the mesh, it's new value is equal to the mean value of it's neighbors
+     * at the previous step.
+     * 
+     * @param previousLaplacian Previous step value of the Laplacian
+     * @param A Adjacency Matrix, used to determine neighbors
+     * @return Value of the Laplacian at this new step
+     */
     Eigen::VectorXd computeDiffuseLaplacianStep(const Eigen::VectorXd& previousLaplacian, const AdjacencyMatrix& A);
 }

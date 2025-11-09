@@ -2,23 +2,17 @@
 
 #include <igl/unproject_onto_mesh.h>
 
-ModelingApp::ModelingApp(Eigen::MatrixXd& V, Eigen::MatrixXi& F, const bool withMenu) : m_V(V), m_F(F)
+ModelingApp::ModelingApp(Eigen::MatrixXd& V, Eigen::MatrixXi& F, const bool withMenu) : m_object(MeshObject(V, F))
 {
-    // Initialize white
-    m_C = Eigen::MatrixXd::Constant(V.rows(),3,1);
-
     // Add callback for face selection
     addMouseCallback();
 
     // Add menu if wanted
     if (withMenu) addMenu();
 
-    // Compute neighbors
-    m_A = MeshOperators::computeAdjacencyMatrix(m_F, m_V.rows());
-
-    // Set mesh data
-    m_viewer.data().set_mesh(m_V, m_F);
-    m_viewer.data().set_colors(m_C);
+    // Set mesh data in the viewer
+    m_viewer.data().set_mesh(m_object.V(), m_object.F());
+    m_viewer.data().set_colors(m_object.C());
 }
 
 void ModelingApp::launch()
@@ -49,20 +43,20 @@ void ModelingApp::addMouseCallback()
       viewer.core().view,
       viewer.core().proj,
       viewer.core().viewport,
-      m_V, m_F, fid, bc))
+      m_object.V(), m_object.F(), fid, bc))
     {
       // Get closest vertex ID
       int maxc;
       bc.maxCoeff(&maxc);
-      int vid = m_F(fid, maxc);
+      int vid = m_object.F()(fid, maxc);
 
       // Paint hit
       updateVertexColor(vid);
-      m_viewer.data().set_colors(m_C);
+      m_viewer.data().set_colors(m_object.C());
 
       // Update selected indexes
       std::cout << "Currently selected : ";
-      for(unsigned int id : m_selectedIndexes) {
+      for(unsigned int id : m_object.Laplacian().selected) {
         std::cout << id << " ";
       } std::cout << std::endl;
 
@@ -193,17 +187,17 @@ void ModelingApp::addMenu()
     {
       if (ImGui::Button("Add topological ring", ImVec2(-1, 0)))
       {
-        if (!m_selectedIndexes.empty()) {
-          std::set<unsigned int> oldIndexes = m_selectedIndexes;
+        if (!m_object.Laplacian().selected.empty()) {
+          std::set<unsigned int> oldIndexes = m_object.Laplacian().selected;
 
           for(unsigned int index : oldIndexes) {
-            const std::vector<int> nghbs = MeshOperators::getNeighbors(m_A, index);
+            const std::vector<int> nghbs = MeshOperators::getNeighbors(m_object.A(), index);
             for (int n : nghbs) {
               updateVertexColor(n, false);
             }
           }
         }
-        m_viewer.data().set_colors(m_C);
+        m_viewer.data().set_colors(m_object.C());
         std::cout << "Topological ring added !" << std::endl;
       }
 
@@ -215,23 +209,23 @@ void ModelingApp::addMenu()
 
       if(ImGui::Button("Reset selected vertices", ImVec2(-1, 0)))
       {
-        m_selectedIndexes.clear();
-        m_C = Eigen::MatrixXd::Constant(m_V.rows(),3,1);
-        m_viewer.data().set_colors(m_C);
+        m_object.Laplacian().selected.clear();
+        m_object.C() = Eigen::MatrixXd::Constant(m_object.V().rows(),3,1);
+        m_viewer.data().set_colors(m_object.C());
         std::cout << "Selected vertices are now empty" << std::endl;
       }
 
       if(ImGui::Button("Init Laplacian", ImVec2(-1, 0)))
       {
-        Eigen::VectorXd initialState = Eigen::VectorXd::Zero(m_A.cols());
-        initialState[m_source] = 1.0;
-        m_laplacianState = initialState;
+        Eigen::VectorXd initialState = Eigen::VectorXd::Zero(m_object.A().cols());
+        initialState[m_object.Laplacian().source] = 1.0;
+        m_object.Laplacian().state = initialState;
         setColorBasedOnLaplacian();
       }
 
       if(ImGui::Button("Step Laplacian", ImVec2(-1, 0)))
       {
-        m_laplacianState = MeshOperators::computeDiffuseLaplacianStep(m_laplacianState, m_A);
+        m_object.Laplacian().state = MeshOperators::computeDiffuseLaplacianStep(m_object.Laplacian().state, m_object.A());
         setColorBasedOnLaplacian();
       }
     }
@@ -241,44 +235,44 @@ void ModelingApp::addMenu()
 
 void ModelingApp::updateVertexColor(const unsigned int vid, const bool canDeactivate)
 {
-  bool isSelected = m_selectedIndexes.count(vid);
+  bool isSelected = m_object.Laplacian().selected.count(vid);
 
   // Source point modification
   if(m_nextIsSource) {
     m_nextIsSource = false;
     if(isSelected) {
-      m_C.row(m_source) = SELECTION_COLOR;
-      m_source = vid;
-      m_C.row(vid) = SOURCE_COLOR;
+      m_object.C().row(m_object.Laplacian().source) = SELECTION_COLOR;
+      m_object.Laplacian().source = vid;
+      m_object.C().row(vid) = SOURCE_COLOR;
     }
     return;
   }
 
   // New selection
   if(!isSelected) {
-    if(m_selectedIndexes.empty()) {
-      m_source = vid;
-      m_C.row(vid) = SOURCE_COLOR;
+    if(m_object.Laplacian().selected.empty()) {
+      m_object.Laplacian().source = vid;
+      m_object.C().row(vid) = SOURCE_COLOR;
     } else {
-      m_C.row(vid) = SELECTION_COLOR;
+      m_object.C().row(vid) = SELECTION_COLOR;
     }
-    m_selectedIndexes.insert(vid);
+    m_object.Laplacian().selected.insert(vid);
 
   } else if (canDeactivate) {
-    m_C.row(vid) = BASE_COLOR;
-    m_selectedIndexes.erase(vid);
+    m_object.C().row(vid) = BASE_COLOR;
+    m_object.Laplacian().selected.erase(vid);
   }
 }
 
 void ModelingApp::setColorBasedOnLaplacian() {
-  Eigen::MatrixXd C(m_laplacianState.size(), 3);
+  Eigen::MatrixXd C(m_object.Laplacian().state.size(), 3);
 
-  double minVal = m_laplacianState.minCoeff();
-  double maxVal = m_laplacianState.maxCoeff();
+  double minVal = m_object.Laplacian().state.minCoeff();
+  double maxVal = m_object.Laplacian().state.maxCoeff();
 
-  for (int i = 0; i < m_laplacianState.size(); ++i)
+  for (int i = 0; i < m_object.Laplacian().state.size(); ++i)
   {
-      double t = (m_laplacianState[i] - minVal) / (maxVal - minVal + 1e-9); // normalisation
+      double t = (m_object.Laplacian().state[i] - minVal) / (maxVal - minVal + 1e-9); // normalisation
       // Bleu -> Rouge
       C(i, 0) = t;          // R
       C(i, 1) = 0.0;        // G

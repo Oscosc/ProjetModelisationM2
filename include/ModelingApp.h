@@ -7,6 +7,7 @@
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
 #include <Eigen/Sparse>
 #include <MeshOperators.h>
+#include <MeshObject.h>
 
 #define SOURCE_COLOR    Eigen::RowVector3d(1, 0, 0)
 #define SELECTION_COLOR Eigen::RowVector3d(1, 1, 0)
@@ -71,18 +72,6 @@ private:
      */
     void updateVertexColor(const unsigned int vid, const bool canDeactivate = true);
 
-    /**
-     * @brief Find the n-topological ring of a point
-     * 
-     * @param vid vertex id (source)
-     * @param ringLevel level of topological ring to find (1 is neighbors linked with an edge to
-     * the source vertex)
-     * @param fill if true, il will return n-topological ring and 1 -> n-1 rings, otherwise it
-     * will return only the selected ring
-     * @return set of vertices of the topological ring
-     */
-    std::set<unsigned int> getTopologicalRing(const unsigned int vid, const unsigned int ringLevel);
-
     void setColorBasedOnLaplacian();
 
 /***************************** ATTRIBUTES ****************************/
@@ -97,29 +86,9 @@ private:
     /** menu object, used to display various tools to perform functions on the mesh */
     igl::opengl::glfw::imgui::ImGuiMenu m_menu;
 
-    /** matrix of mesh's vertices positions */
-    Eigen::MatrixXd m_V;
-
-    /** matrix of mesh's vertices colors */
-    Eigen::MatrixXd m_C;
-
-    /** matrix of mesh's faces, containing the 3 vertices that's form face triangle on each row */
-    Eigen::MatrixXi m_F;
-
-    /** default mesh color. DEPRECATED */
-    Eigen::RowVector4f m_meshColor = Eigen::RowVector4f(0.8f, 0.8f, 0.8f, 1.0f);
-
-    /** currently selected vertices indexes on the mesh */
-    std::set<unsigned int> m_selectedIndexes;
-
-    /** precomputed mesh's neighbors map */
-    MeshOperators::AdjacencyMatrix m_A;
-
     /** INTERFACE : define if the next clicked point will set the source */
     bool m_nextIsSource = false;
 
-    /** vid of the source point in the selection area */
-    unsigned int m_source;
-
-    Eigen::VectorXd m_laplacianState;
+    /** Active object in the viewer */
+    MeshObject m_object;
 };
