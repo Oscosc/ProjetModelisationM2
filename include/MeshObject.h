@@ -77,6 +77,8 @@ public:
 
     void stepLaplacian();
 
+    void linearSolvingLaplacian();
+
 private:
 
     /** Information of current selection for Laplacian computation */

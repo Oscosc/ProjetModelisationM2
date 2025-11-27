@@ -44,5 +44,44 @@ namespace MeshOperators
      * @param A Adjacency Matrix, used to determine neighbors
      * @return Value of the Laplacian at this new step
      */
-    Eigen::VectorXd computeDiffuseLaplacianStep(const Eigen::VectorXd& previousLaplacian, const AdjacencyMatrix& A);
+    Eigen::VectorXd computeDiffuseLaplacianStep(
+        const Eigen::VectorXd& previousLaplacian,
+        const AdjacencyMatrix& A,
+        const unsigned int sourceID
+    );
+
+    /**
+     * @brief TODO
+     * 
+     * @param V 
+     * @param F 
+     * @param b 
+     * @param in 
+     * @param bc_values 
+     * @return Eigen::VectorXd 
+     */
+    Eigen::VectorXd computeLinearSystemLaplacian(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const Eigen::VectorXi& b,
+        const Eigen::VectorXi& in,
+        const Eigen::VectorXd& bcValues
+    );
+
+    /**
+     * @brief TODO
+     * 
+     * @param V 
+     * @param in 
+     * @param source 
+     * @param bOut 
+     * @param bcOut 
+     */
+    void laplacianBoundaryValues(
+        const Eigen::MatrixXd& V,
+        const Eigen::VectorXi& in,
+        const unsigned int source,
+        Eigen::VectorXi& b,
+        Eigen::VectorXd& bcValues
+    );
 }

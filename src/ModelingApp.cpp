@@ -55,11 +55,7 @@ void ModelingApp::addMouseCallback()
       m_viewer.data().set_colors(m_object.C());
 
       // Update selected indexes
-      std::cout << "Currently selected : ";
-      for(unsigned int id : m_object.Laplacian().selected) {
-        std::cout << id << " ";
-      } std::cout << std::endl;
-
+      std::cout << "Selection contain " << m_object.Laplacian().selected.size() << " vertices" << std::endl;
       return true;
     }
     return false;
@@ -198,7 +194,7 @@ void ModelingApp::addMenu()
           }
         }
         m_viewer.data().set_colors(m_object.C());
-        std::cout << "Topological ring added !" << std::endl;
+        std::cout << "Selection contain " << m_object.Laplacian().selected.size() << " vertices" << std::endl;
       }
 
       if (ImGui::Button("Select source point", ImVec2(-1, 0)))
@@ -223,6 +219,12 @@ void ModelingApp::addMenu()
       if(ImGui::Button("Step Laplacian", ImVec2(-1, 0)))
       {
         m_object.stepLaplacian();
+        setColorBasedOnLaplacian();
+      }
+
+      if(ImGui::Button("Solve Laplacian", ImVec2(-1, 0)))
+      {
+        m_object.linearSolvingLaplacian();
         setColorBasedOnLaplacian();
       }
     }

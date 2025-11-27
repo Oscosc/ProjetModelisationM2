@@ -63,5 +63,25 @@ void MeshObject::initLaplacian()
 
 void MeshObject::stepLaplacian()
 {
-    m_laplacian.state = MeshOperators::computeDiffuseLaplacianStep(this->Laplacian().state, this->A());
+    m_laplacian.state = MeshOperators::computeDiffuseLaplacianStep(this->Laplacian().state, this->A(), this->Laplacian().source);
+}
+
+void MeshObject::linearSolvingLaplacian()
+{
+    Eigen::VectorXi b;
+    Eigen::VectorXd bc;
+
+    // Suppression de la source dans la selection
+    std::set<unsigned int> selectedNoSource = Laplacian().selected;
+    selectedNoSource.erase(Laplacian().source);
+
+    // Création du vecteur 'in'
+    Eigen::VectorXi in(selectedNoSource.size());
+
+    // Copie dans un vecteur Eigen
+    std::copy(selectedNoSource.begin(), selectedNoSource.end(), in.data());
+
+    // Lancement de la résolution
+    MeshOperators::laplacianBoundaryValues(V(), in, Laplacian().source, b, bc);
+    m_laplacian.state = MeshOperators::computeLinearSystemLaplacian(V(), F(), b, in, bc);
 }
