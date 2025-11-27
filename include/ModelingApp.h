@@ -9,10 +9,6 @@
 #include <MeshOperators.h>
 #include <MeshObject.h>
 
-#define SOURCE_COLOR    Eigen::RowVector3d(1, 0, 0)
-#define SELECTION_COLOR Eigen::RowVector3d(1, 1, 0)
-#define BASE_COLOR      Eigen::RowVector3d(1, 1, 1)
-
 /**
  * @brief Contain UI interface and mesh loader system.
  * Only one mesh can be loaded at once.

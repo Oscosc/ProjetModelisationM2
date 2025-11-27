@@ -209,23 +209,20 @@ void ModelingApp::addMenu()
 
       if(ImGui::Button("Reset selected vertices", ImVec2(-1, 0)))
       {
-        m_object.Laplacian().selected.clear();
-        m_object.C() = Eigen::MatrixXd::Constant(m_object.V().rows(),3,1);
+        m_object.resetLaplacianArea();
         m_viewer.data().set_colors(m_object.C());
         std::cout << "Selected vertices are now empty" << std::endl;
       }
 
       if(ImGui::Button("Init Laplacian", ImVec2(-1, 0)))
       {
-        Eigen::VectorXd initialState = Eigen::VectorXd::Zero(m_object.A().cols());
-        initialState[m_object.Laplacian().source] = 1.0;
-        m_object.Laplacian().state = initialState;
+        m_object.initLaplacian();
         setColorBasedOnLaplacian();
       }
 
       if(ImGui::Button("Step Laplacian", ImVec2(-1, 0)))
       {
-        m_object.Laplacian().state = MeshOperators::computeDiffuseLaplacianStep(m_object.Laplacian().state, m_object.A());
+        m_object.stepLaplacian();
         setColorBasedOnLaplacian();
       }
     }
@@ -240,27 +237,13 @@ void ModelingApp::updateVertexColor(const unsigned int vid, const bool canDeacti
   // Source point modification
   if(m_nextIsSource) {
     m_nextIsSource = false;
-    if(isSelected) {
-      m_object.C().row(m_object.Laplacian().source) = SELECTION_COLOR;
-      m_object.Laplacian().source = vid;
-      m_object.C().row(vid) = SOURCE_COLOR;
-    }
+    m_object.changeLaplacianSource(vid);
     return;
   }
 
-  // New selection
-  if(!isSelected) {
-    if(m_object.Laplacian().selected.empty()) {
-      m_object.Laplacian().source = vid;
-      m_object.C().row(vid) = SOURCE_COLOR;
-    } else {
-      m_object.C().row(vid) = SELECTION_COLOR;
-    }
-    m_object.Laplacian().selected.insert(vid);
-
-  } else if (canDeactivate) {
-    m_object.C().row(vid) = BASE_COLOR;
-    m_object.Laplacian().selected.erase(vid);
+  // Other point modification
+  if (!m_object.addLaplacian(vid) && canDeactivate) {
+    m_object.removeLaplacian(vid);
   }
 }
 
