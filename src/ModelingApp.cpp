@@ -187,7 +187,7 @@ void ModelingApp::addMenu()
           std::set<unsigned int> oldIndexes = m_object.Laplacian().selected;
 
           for(unsigned int index : oldIndexes) {
-            const std::vector<int> nghbs = MeshOperators::getNeighbors(m_object.A(), index);
+            const std::vector<int> nghbs = MeshOperators::getNeighbors(m_object.L(), index);
             for (int n : nghbs) {
               updateVertexColor(n, false);
             }
@@ -226,6 +226,12 @@ void ModelingApp::addMenu()
       {
         m_object.linearSolvingLaplacian();
         setColorBasedOnLaplacian();
+      }
+
+      if(ImGui::Button("Deform Laplacian", ImVec2(-1, 0)))
+      {
+        m_object.deformLaplacian(0.05);
+        m_viewer.data().set_vertices(m_object.V());
       }
     }
 

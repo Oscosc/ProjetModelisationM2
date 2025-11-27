@@ -36,10 +36,11 @@ public:
     /************************************ GETTERS ************************************/
 
     const LaplacianArea& Laplacian() { return m_laplacian; }
-    const MeshOperators::AdjacencyMatrix& A() { return m_A; }
+    const Eigen::SparseMatrix<double>& L() { return m_L; }
     const Eigen::MatrixXd& V() { return m_V; }
     const Eigen::MatrixXd& C() { return m_C; }
     const Eigen::MatrixXi& F() { return m_F; }
+    const Eigen::MatrixXd& N() { return m_N; }
 
     /*********************************************************************************/
 
@@ -79,13 +80,15 @@ public:
 
     void linearSolvingLaplacian();
 
+    void deformLaplacian(const double alpha = 1.0);
+
 private:
 
     /** Information of current selection for Laplacian computation */
     LaplacianArea m_laplacian;
 
     /** precomputed mesh's neighbors map */
-    MeshOperators::AdjacencyMatrix m_A;
+    Eigen::SparseMatrix<double> m_L;
 
     /** matrix of mesh's vertices positions */
     Eigen::MatrixXd m_V;
@@ -95,4 +98,7 @@ private:
 
     /** matrix of mesh's faces, containing the 3 vertices that's form face triangle on each row */
     Eigen::MatrixXi m_F;
+
+    /** matrix of mesh's normals per vertex */
+    Eigen::MatrixXd m_N;
 };

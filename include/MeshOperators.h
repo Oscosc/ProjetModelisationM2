@@ -32,7 +32,7 @@ namespace MeshOperators
      * @param vid Vertex ID for wich we need to find the neighbors
      * @return A list of vertex IDs representing neighbors
      */
-    const std::vector<int> getNeighbors(const AdjacencyMatrix& A, const int vid);
+    const std::vector<int> getNeighbors(const Eigen::SparseMatrix<double>& L, const int vid);
 
     /**
      * @brief Compute a step of Laplacian diffusion function.
@@ -46,7 +46,7 @@ namespace MeshOperators
      */
     Eigen::VectorXd computeDiffuseLaplacianStep(
         const Eigen::VectorXd& previousLaplacian,
-        const AdjacencyMatrix& A,
+        const Eigen::SparseMatrix<double>& L,
         const unsigned int sourceID
     );
 
@@ -62,7 +62,7 @@ namespace MeshOperators
      */
     Eigen::VectorXd computeLinearSystemLaplacian(
         const Eigen::MatrixXd& V,
-        const Eigen::MatrixXi& F,
+        const Eigen::SparseMatrix<double>& L,
         const Eigen::VectorXi& b,
         const Eigen::VectorXi& in,
         const Eigen::VectorXd& bcValues
@@ -83,5 +83,12 @@ namespace MeshOperators
         const unsigned int source,
         Eigen::VectorXi& b,
         Eigen::VectorXd& bcValues
+    );
+
+    void deformationLaplacian(
+        Eigen::MatrixXd& V,
+        const Eigen::Block<const Eigen::MatrixXd, 1, -1, false>& normal,
+        const Eigen::VectorXd& laplacian,
+        const double alpha
     );
 }

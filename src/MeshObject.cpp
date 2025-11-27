@@ -1,9 +1,12 @@
 #include <MeshObject.h>
 
+#include <igl/per_vertex_normals.h>
+
 MeshObject::MeshObject(Eigen::MatrixXd& V, Eigen::MatrixXi& F) : m_V(V), m_F(F)
 {
     m_C = Eigen::MatrixXd::Constant(m_V.rows(),3,1);
-    m_A = MeshOperators::computeAdjacencyMatrix(m_F, m_V.rows());
+    igl::cotmatrix(m_V, m_F, m_L);
+    igl::per_vertex_normals(m_V, m_F, m_N);
 }
 
 void MeshObject::resetLaplacianArea()
@@ -56,14 +59,14 @@ bool MeshObject::removeLaplacian(unsigned int vid)
 
 void MeshObject::initLaplacian()
 {
-    Eigen::VectorXd initialState = Eigen::VectorXd::Zero(this->A().cols());
+    Eigen::VectorXd initialState = Eigen::VectorXd::Zero(this->L().cols());
     initialState[this->Laplacian().source] = 1.0;
     m_laplacian.state = initialState;
 }
 
 void MeshObject::stepLaplacian()
 {
-    m_laplacian.state = MeshOperators::computeDiffuseLaplacianStep(this->Laplacian().state, this->A(), this->Laplacian().source);
+    m_laplacian.state = MeshOperators::computeDiffuseLaplacianStep(this->Laplacian().state, this->L(), this->Laplacian().source);
 }
 
 void MeshObject::linearSolvingLaplacian()
@@ -83,5 +86,12 @@ void MeshObject::linearSolvingLaplacian()
 
     // Lancement de la résolution
     MeshOperators::laplacianBoundaryValues(V(), in, Laplacian().source, b, bc);
-    m_laplacian.state = MeshOperators::computeLinearSystemLaplacian(V(), F(), b, in, bc);
+    m_laplacian.state = MeshOperators::computeLinearSystemLaplacian(V(), L(), b, in, bc);
+}
+
+void MeshObject::deformLaplacian(const double alpha)
+{
+    auto normal = N().row(Laplacian().source);
+    MeshOperators::deformationLaplacian(m_V, normal, Laplacian().state, alpha);
+    igl::per_vertex_normals(m_V, m_F, m_N); // Recalcul des normales
 }

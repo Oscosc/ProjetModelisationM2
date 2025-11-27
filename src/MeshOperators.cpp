@@ -29,34 +29,33 @@ MeshOperators::AdjacencyMatrix MeshOperators::computeAdjacencyMatrix(const Eigen
     return A;
 }
 
-const std::vector<int> MeshOperators::getNeighbors(const AdjacencyMatrix& A, const int vid)
+const std::vector<int> MeshOperators::getNeighbors(const Eigen::SparseMatrix<double>& L, const int vid)
 {
     std::vector<int> neighbors;
-    for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(A, vid); it; ++it)
+    const Eigen::SparseMatrix<double>& L_T = L; 
+    
+    for (Eigen::SparseMatrix<double>::InnerIterator it(L_T, vid); it; ++it)
     {
-        int j = it.col();
-        if (it.value() != 0.0 && j != vid)
+        int j = it.row(); 
+        if (j != vid)
             neighbors.push_back(j);
     }
     return neighbors;
 }
 
-Eigen::VectorXd MeshOperators::computeDiffuseLaplacianStep(const Eigen::VectorXd& previousLaplacian, const AdjacencyMatrix& A,
-    const unsigned int sourceID)
+Eigen::VectorXd MeshOperators::computeDiffuseLaplacianStep(const Eigen::VectorXd& previousLaplacian,
+    const Eigen::SparseMatrix<double>& L, const unsigned int sourceID)
 {
-    // L(t) = (A * L(t-1)) / (A * [1])
-    Eigen::VectorXd rawResult = (A * previousLaplacian).cwiseQuotient(A * Eigen::VectorXd::Ones(A.cols()));
-    // rawResult[sourceID] = 1.0;
+    // l(t) = (L * l(t-1)) / (L * [1]) -> Equation principale
+    Eigen::VectorXd rawResult = (L * previousLaplacian).cwiseQuotient(L * Eigen::VectorXd::Ones(L.cols()));
+
+    rawResult[sourceID] = 1.0; // Forcer la source à 1
     return rawResult;
 }
 
-Eigen::VectorXd MeshOperators::computeLinearSystemLaplacian(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F,
+Eigen::VectorXd MeshOperators::computeLinearSystemLaplacian(const Eigen::MatrixXd& V, const Eigen::SparseMatrix<double>& L,
     const Eigen::VectorXi& b, const Eigen::VectorXi& in, const Eigen::VectorXd& bcValues)
 {
-    // Calcul de la matrice des cotangences (plus réaliste que la matrice d'adjacence car tient compte des angles ?)
-    Eigen::SparseMatrix<double> L;
-    igl::cotmatrix(V, F, L);
-
     // On ne veut conserver que L_in_in et L_in_b (cf. Documentation), donc on slice la matrice pour ne conserver que
     // ces valeurs
     Eigen::SparseMatrix<double> L_in_in, L_in_b;
@@ -107,4 +106,10 @@ void MeshOperators::laplacianBoundaryValues(const Eigen::MatrixXd &V, const Eige
     std::cout << "Source index in boundaries vector : " << sourceIndex << std::endl;
     
     bcValues[sourceIndex] = 1;
+}
+
+void MeshOperators::deformationLaplacian(Eigen::MatrixXd &V, const Eigen::Block<const Eigen::MatrixXd, 1, -1, false>& normal,
+    const Eigen::VectorXd &laplacian, const double alpha)
+{
+    V += (laplacian * normal) * alpha;
 }
