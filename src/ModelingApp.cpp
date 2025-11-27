@@ -228,9 +228,15 @@ void ModelingApp::addMenu()
         setColorBasedOnLaplacian();
       }
 
-      if(ImGui::Button("Deform Laplacian", ImVec2(-1, 0)))
+      if(ImGui::Button("+ Laplacian", ImVec2(-1, 0)))
       {
-        m_object.deformLaplacian(0.05);
+        m_object.deformLaplacian(0.01);
+        m_viewer.data().set_vertices(m_object.V());
+      }
+
+      if(ImGui::Button("- Laplacian", ImVec2(-1, 0)))
+      {
+        m_object.deformLaplacian(-0.01);
         m_viewer.data().set_vertices(m_object.V());
       }
     }

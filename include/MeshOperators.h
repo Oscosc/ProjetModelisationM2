@@ -85,10 +85,26 @@ namespace MeshOperators
         Eigen::VectorXd& bcValues
     );
 
+    namespace Transfert {
+
+        inline auto identity = [](const Eigen::VectorXd& L_in) -> Eigen::VectorXd {
+            return L_in;
+        };
+
+        inline auto sqrt = [](const Eigen::VectorXd& L_in) -> Eigen::VectorXd {
+            return L_in.array().sqrt().matrix();
+        };
+
+        inline auto log = [](const Eigen::VectorXd& L_in) -> Eigen::VectorXd {
+            return (L_in.array().abs() + 1.0).log() * L_in.array().sign();
+        };
+    }
+
     void deformationLaplacian(
         Eigen::MatrixXd& V,
         const Eigen::Block<const Eigen::MatrixXd, 1, -1, false>& normal,
         const Eigen::VectorXd& laplacian,
-        const double alpha
+        const double alpha,
+        std::function<Eigen::VectorXd(const Eigen::VectorXd&)> transfertFunction = Transfert::log
     );
 }

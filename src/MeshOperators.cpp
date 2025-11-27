@@ -109,7 +109,8 @@ void MeshOperators::laplacianBoundaryValues(const Eigen::MatrixXd &V, const Eige
 }
 
 void MeshOperators::deformationLaplacian(Eigen::MatrixXd &V, const Eigen::Block<const Eigen::MatrixXd, 1, -1, false>& normal,
-    const Eigen::VectorXd &laplacian, const double alpha)
+    const Eigen::VectorXd &laplacian, const double alpha, std::function<Eigen::VectorXd(const Eigen::VectorXd&)> transfertFunction)
 {
-    V += (laplacian * normal) * alpha;
+    const Eigen::VectorXd transferedLaplacian = transfertFunction(laplacian);
+    V += (transferedLaplacian * normal) * alpha;
 }
