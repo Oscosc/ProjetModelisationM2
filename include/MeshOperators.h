@@ -47,7 +47,9 @@ namespace MeshOperators
     Eigen::VectorXd computeDiffuseLaplacianStep(
         const Eigen::VectorXd& previousLaplacian,
         const Eigen::SparseMatrix<double>& L,
-        const unsigned int sourceID
+        const unsigned int sourceID,
+        const Eigen::VectorXi& b,
+        const Eigen::VectorXd& bc
     );
 
     /**
@@ -98,6 +100,10 @@ namespace MeshOperators
         inline auto log = [](const Eigen::VectorXd& L_in) -> Eigen::VectorXd {
             return (L_in.array().abs() + 1.0).log() * L_in.array().sign();
         };
+
+        inline auto sigmoid = [](const Eigen::VectorXd& L_in) -> Eigen::VectorXd {
+            return (1.0 / (1.0 + (-L_in.array()).exp())).matrix();
+        };
     }
 
     void deformationLaplacian(
@@ -105,6 +111,6 @@ namespace MeshOperators
         const Eigen::Block<const Eigen::MatrixXd, 1, -1, false>& normal,
         const Eigen::VectorXd& laplacian,
         const double alpha,
-        std::function<Eigen::VectorXd(const Eigen::VectorXd&)> transfertFunction = Transfert::log
+        std::function<Eigen::VectorXd(const Eigen::VectorXd&)> transfertFunction = Transfert::identity
     );
 }

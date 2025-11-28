@@ -7,6 +7,9 @@ ModelingApp::ModelingApp(Eigen::MatrixXd& V, Eigen::MatrixXi& F, const bool with
     // Add callback for face selection
     addMouseCallback();
 
+    // Add pre-draw callback
+    addPreDrawCallback();
+
     // Add menu if wanted
     if (withMenu) addMenu();
 
@@ -61,6 +64,18 @@ void ModelingApp::addMouseCallback()
     return false;
   };
   std::cout<< R"(  [clic]  Pick vertex on shape)" << std::endl;
+}
+
+void ModelingApp::addPreDrawCallback()
+{
+  m_viewer.callback_pre_draw = [this](igl::opengl::glfw::Viewer& viewer)->bool
+  {
+    if(m_diffusing) {
+      m_object.stepLaplacian();
+      setColorBasedOnLaplacian();
+    }
+    return false;
+  };
 }
 
 void ModelingApp::addMenu()
@@ -205,21 +220,17 @@ void ModelingApp::addMenu()
 
       if(ImGui::Button("Reset selected vertices", ImVec2(-1, 0)))
       {
+        m_diffusing = false;
         m_object.resetLaplacianArea();
         m_viewer.data().set_colors(m_object.C());
         std::cout << "Selected vertices are now empty" << std::endl;
       }
 
-      if(ImGui::Button("Init Laplacian", ImVec2(-1, 0)))
+      if(ImGui::Button("Diffuse Laplacian", ImVec2(-1, 0)))
       {
         m_object.initLaplacian();
         setColorBasedOnLaplacian();
-      }
-
-      if(ImGui::Button("Step Laplacian", ImVec2(-1, 0)))
-      {
-        m_object.stepLaplacian();
-        setColorBasedOnLaplacian();
+        m_diffusing = true;
       }
 
       if(ImGui::Button("Solve Laplacian", ImVec2(-1, 0)))
@@ -264,8 +275,8 @@ void ModelingApp::updateVertexColor(const unsigned int vid, const bool canDeacti
 void ModelingApp::setColorBasedOnLaplacian() {
   Eigen::MatrixXd C(m_object.Laplacian().state.size(), 3);
 
-  double minVal = m_object.Laplacian().state.minCoeff();
-  double maxVal = m_object.Laplacian().state.maxCoeff();
+  double minVal = 0.0; // m_object.Laplacian().state.minCoeff();
+  double maxVal = 1.0; // m_object.Laplacian().state.maxCoeff();
 
   for (int i = 0; i < m_object.Laplacian().state.size(); ++i)
   {

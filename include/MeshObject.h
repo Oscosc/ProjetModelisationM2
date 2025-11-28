@@ -74,6 +74,8 @@ public:
      */
     bool removeLaplacian(unsigned int vid);
 
+    void selectionToLaplaceForm(Eigen::VectorXi& in, Eigen::VectorXi& b, Eigen::VectorXd& bc);
+
     void initLaplacian();
 
     void stepLaplacian();

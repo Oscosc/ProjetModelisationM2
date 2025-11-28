@@ -52,6 +52,8 @@ private:
      */
     void addMouseCallback();
 
+    void addPreDrawCallback();
+
     /**
      * @brief Add ImGui menu to this application viewer
      * 
@@ -84,6 +86,7 @@ private:
 
     /** INTERFACE : define if the next clicked point will set the source */
     bool m_nextIsSource = false;
+    bool m_diffusing = false;
 
     /** Active object in the viewer */
     MeshObject m_object;

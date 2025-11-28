@@ -44,12 +44,20 @@ const std::vector<int> MeshOperators::getNeighbors(const Eigen::SparseMatrix<dou
 }
 
 Eigen::VectorXd MeshOperators::computeDiffuseLaplacianStep(const Eigen::VectorXd& previousLaplacian,
-    const Eigen::SparseMatrix<double>& L, const unsigned int sourceID)
+    const Eigen::SparseMatrix<double>& L, const unsigned int sourceID, const Eigen::VectorXi& b, const Eigen::VectorXd& bc)
 {
-    // l(t) = (L * l(t-1)) / (L * [1]) -> Equation principale
-    Eigen::VectorXd rawResult = (L * previousLaplacian).cwiseQuotient(L * Eigen::VectorXd::Ones(L.cols()));
+    const double DELTA_T = 5e-2;
 
-    rawResult[sourceID] = 1.0; // Forcer la source à 1
+    // l(t) = l(t-1) + delta * l(t-1) * L
+    Eigen::VectorXd gradient = L * previousLaplacian;
+    Eigen::VectorXd rawResult = previousLaplacian + DELTA_T * gradient; 
+
+    // Conditions aux limites
+    for(unsigned int i = 0; i < b.size(); ++i) {
+        assert(previousLaplacian[b[i]] == bc[i]); // Pas de changement sur la condition
+        rawResult[b[i]] = bc[i];
+    }
+    
     return rawResult;
 }
 
@@ -101,9 +109,6 @@ void MeshOperators::laplacianBoundaryValues(const Eigen::MatrixXd &V, const Eige
     int sourceIndex;
     Eigen::Array<bool, Eigen::Dynamic, 1> mask = (b.array() == (int)source); // Masque de recherche
     bool dummy = mask.maxCoeff(&sourceIndex); // On assume qu'il n'existe que chaque élément du vecteur est unique
-
-    std::cout << "Source index in all vertices     : " << source << std::endl;
-    std::cout << "Source index in boundaries vector : " << sourceIndex << std::endl;
     
     bcValues[sourceIndex] = 1;
 }

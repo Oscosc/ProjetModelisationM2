@@ -57,6 +57,20 @@ bool MeshObject::removeLaplacian(unsigned int vid)
     return false;
 }
 
+void MeshObject::selectionToLaplaceForm(Eigen::VectorXi& in, Eigen::VectorXi& b, Eigen::VectorXd& bc)
+{
+    // Suppression de la source dans la selection
+    std::set<unsigned int> selectedNoSource = Laplacian().selected;
+    selectedNoSource.erase(Laplacian().source);
+
+    // Création du vecteur 'in' et copie des données
+    in = Eigen::VectorXi(selectedNoSource.size());
+    std::copy(selectedNoSource.begin(), selectedNoSource.end(), in.data());
+
+    // Lancement de la résolution
+    MeshOperators::laplacianBoundaryValues(V(), in, Laplacian().source, b, bc);
+}
+
 void MeshObject::initLaplacian()
 {
     Eigen::VectorXd initialState = Eigen::VectorXd::Zero(this->L().cols());
@@ -66,26 +80,27 @@ void MeshObject::initLaplacian()
 
 void MeshObject::stepLaplacian()
 {
-    m_laplacian.state = MeshOperators::computeDiffuseLaplacianStep(this->Laplacian().state, this->L(), this->Laplacian().source);
+    Eigen::VectorXi in, b;
+    Eigen::VectorXd bc;
+
+    // Récupération des conditions aux limites
+    selectionToLaplaceForm(in, b, bc);
+
+    // Calcul de la diffusion
+    m_laplacian.state = MeshOperators::computeDiffuseLaplacianStep(
+        this->Laplacian().state,
+        this->L(),
+        this->Laplacian().source,
+        b, bc
+    );
 }
 
 void MeshObject::linearSolvingLaplacian()
 {
-    Eigen::VectorXi b;
+    Eigen::VectorXi in, b;
     Eigen::VectorXd bc;
 
-    // Suppression de la source dans la selection
-    std::set<unsigned int> selectedNoSource = Laplacian().selected;
-    selectedNoSource.erase(Laplacian().source);
-
-    // Création du vecteur 'in'
-    Eigen::VectorXi in(selectedNoSource.size());
-
-    // Copie dans un vecteur Eigen
-    std::copy(selectedNoSource.begin(), selectedNoSource.end(), in.data());
-
-    // Lancement de la résolution
-    MeshOperators::laplacianBoundaryValues(V(), in, Laplacian().source, b, bc);
+    selectionToLaplaceForm(in, b, bc);
     m_laplacian.state = MeshOperators::computeLinearSystemLaplacian(V(), L(), b, in, bc);
 }
 
@@ -93,5 +108,5 @@ void MeshObject::deformLaplacian(const double alpha)
 {
     auto normal = N().row(Laplacian().source);
     MeshOperators::deformationLaplacian(m_V, normal, Laplacian().state, alpha);
-    igl::per_vertex_normals(m_V, m_F, m_N); // Recalcul des normales
+    // igl::per_vertex_normals(m_V, m_F, m_N); // Recalcul des normales
 }
