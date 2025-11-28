@@ -3,6 +3,7 @@
 #include <igl/cotmatrix.h>
 #include <igl/slice_into.h>
 #include <igl/setdiff.h>
+#include <igl/barycenter.h>
 
 MeshOperators::AdjacencyMatrix MeshOperators::computeAdjacencyMatrix(const Eigen::MatrixXi &F, const int sizeV)
 {
@@ -46,11 +47,11 @@ const std::vector<int> MeshOperators::getNeighbors(const Eigen::SparseMatrix<dou
 Eigen::VectorXd MeshOperators::computeDiffuseLaplacianStep(const Eigen::VectorXd& previousLaplacian,
     const Eigen::SparseMatrix<double>& L, const unsigned int sourceID, const Eigen::VectorXi& b, const Eigen::VectorXd& bc)
 {
-    const double DELTA_T = 5e-2;
+    const double DELTA_T = 0.5;
 
     // l(t) = l(t-1) + delta * l(t-1) * L
     Eigen::VectorXd gradient = L * previousLaplacian;
-    Eigen::VectorXd rawResult = previousLaplacian + DELTA_T * gradient; 
+    Eigen::VectorXd rawResult = previousLaplacian + DELTA_T * gradient;
 
     // Conditions aux limites
     for(unsigned int i = 0; i < b.size(); ++i) {
@@ -111,6 +112,40 @@ void MeshOperators::laplacianBoundaryValues(const Eigen::MatrixXd &V, const Eige
     bool dummy = mask.maxCoeff(&sourceIndex); // On assume qu'il n'existe que chaque élément du vecteur est unique
     
     bcValues[sourceIndex] = 1;
+}
+
+void MeshOperators::laplacianSmoothing(Eigen::MatrixXd& U, const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F, const Eigen::SparseMatrix<double>& L)
+{
+    /************ CODE FROM LIBIGL DOCUMENTATION ************/
+
+    // Recompute just mass matrix on each step
+    Eigen::SparseMatrix<double> M;
+    igl::massmatrix(V, F, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
+
+    // Solve (M-delta*L) U = M*U
+    const auto & S = (M - 0.001 * L);
+    Eigen::SimplicialLLT<Eigen::SparseMatrix<double>> solver(S);
+    assert(solver.info() == Eigen::Success);
+    U = solver.solve(M*U).eval();
+
+    // Compute centroid and subtract (also important for numerics)
+    Eigen::VectorXd dblA;
+    igl::doublearea(U,F,dblA);
+    double area = 0.5*dblA.sum();
+    Eigen::MatrixXd BC;
+    igl::barycenter(U,F,BC);
+    Eigen::RowVector3d centroid(0,0,0);
+
+    for(int i = 0;i<BC.rows();i++)
+    {
+        centroid += 0.5*dblA(i)/area*BC.row(i);
+    }
+
+    U.rowwise() -= centroid;
+
+    // Normalize to unit surface area (important for numerics)
+    U.array() /= sqrt(area);
 }
 
 void MeshOperators::deformationLaplacian(Eigen::MatrixXd &V, const Eigen::Block<const Eigen::MatrixXd, 1, -1, false>& normal,

@@ -87,6 +87,7 @@ private:
     /** INTERFACE : define if the next clicked point will set the source */
     bool m_nextIsSource = false;
     bool m_diffusing = false;
+    int m_currentDeformation = 0;
 
     /** Active object in the viewer */
     MeshObject m_object;

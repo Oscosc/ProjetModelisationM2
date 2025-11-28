@@ -1,8 +1,9 @@
 #include <MeshObject.h>
 
 #include <igl/per_vertex_normals.h>
+#include <igl/setdiff.h>
 
-MeshObject::MeshObject(Eigen::MatrixXd& V, Eigen::MatrixXi& F) : m_V(V), m_F(F)
+MeshObject::MeshObject(Eigen::MatrixXd& V, Eigen::MatrixXi& F) : m_V(V), m_baseV(V), m_F(F)
 {
     m_C = Eigen::MatrixXd::Constant(m_V.rows(),3,1);
     igl::cotmatrix(m_V, m_F, m_L);
@@ -104,9 +105,24 @@ void MeshObject::linearSolvingLaplacian()
     m_laplacian.state = MeshOperators::computeLinearSystemLaplacian(V(), L(), b, in, bc);
 }
 
+void MeshObject::setDeformationMethod(const int id)
+{
+    m_deformationMethod = MeshOperators::Transfert::METHODS[id];
+}
+
 void MeshObject::deformLaplacian(const double alpha)
 {
     auto normal = N().row(Laplacian().source);
-    MeshOperators::deformationLaplacian(m_V, normal, Laplacian().state, alpha);
+    MeshOperators::deformationLaplacian(m_V, normal, Laplacian().state, alpha, m_deformationMethod);
     // igl::per_vertex_normals(m_V, m_F, m_N); // Recalcul des normales
+}
+
+void MeshObject::laplacianSmoothing()
+{
+    MeshOperators::laplacianSmoothing(m_V, V(), F(), L());
+}
+
+void MeshObject::resetMesh()
+{
+    m_V = m_baseV;
 }

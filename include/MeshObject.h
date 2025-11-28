@@ -82,7 +82,13 @@ public:
 
     void linearSolvingLaplacian();
 
+    void setDeformationMethod(const int id);
+
     void deformLaplacian(const double alpha = 1.0);
+
+    void laplacianSmoothing();
+
+    void resetMesh();
 
 private:
 
@@ -94,6 +100,7 @@ private:
 
     /** matrix of mesh's vertices positions */
     Eigen::MatrixXd m_V;
+    const Eigen::MatrixXd m_baseV;
 
     /** matrix of mesh's vertices colors */
     Eigen::MatrixXd m_C;
@@ -103,4 +110,7 @@ private:
 
     /** matrix of mesh's normals per vertex */
     Eigen::MatrixXd m_N;
+
+    /** deformation method selected for this object */
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&)> m_deformationMethod = MeshOperators::Transfert::identity;
 };

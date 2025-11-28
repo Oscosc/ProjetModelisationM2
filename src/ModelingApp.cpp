@@ -196,6 +196,12 @@ void ModelingApp::addMenu()
     // Modeling
     if (ImGui::CollapsingHeader("Modeling Options", ImGuiTreeNodeFlags_DefaultOpen))
     {
+      if (ImGui::Button("Smooth step", ImVec2(-1, 0)))
+      {
+        m_object.laplacianSmoothing();
+        m_viewer.data().set_vertices(m_object.V());
+      }
+
       if (ImGui::Button("Add topological ring", ImVec2(-1, 0)))
       {
         if (!m_object.Laplacian().selected.empty()) {
@@ -226,6 +232,12 @@ void ModelingApp::addMenu()
         std::cout << "Selected vertices are now empty" << std::endl;
       }
 
+      if(ImGui::Button("Reset mesh", ImVec2(-1, 0)))
+      {
+        m_object.resetMesh();
+        m_viewer.data().set_vertices(m_object.V());
+      }
+
       if(ImGui::Button("Diffuse Laplacian", ImVec2(-1, 0)))
       {
         m_object.initLaplacian();
@@ -237,6 +249,31 @@ void ModelingApp::addMenu()
       {
         m_object.linearSolvingLaplacian();
         setColorBasedOnLaplacian();
+      }
+
+      const char* items[] = { "Identity", "Square root", "Logarithm", "Sigmoid", "Windowed Sigmoid"}; 
+      const int ITEMS_COUNT = IM_ARRAYSIZE(items);
+      const char* previewValue = items[m_currentDeformation];
+
+      if (ImGui::BeginCombo("Transfert Function", previewValue))
+      {
+          for (int i = 0; i < ITEMS_COUNT; i++)
+          {
+              const bool isSelected = (m_currentDeformation == i);
+
+              if (ImGui::Selectable(items[i], isSelected))
+              {
+                  m_currentDeformation = i;
+                  m_object.setDeformationMethod(i);
+              }
+
+              if (isSelected)
+              {
+                  ImGui::SetItemDefaultFocus();
+              }
+          }
+          
+          ImGui::EndCombo();
       }
 
       if(ImGui::Button("+ Laplacian", ImVec2(-1, 0)))
